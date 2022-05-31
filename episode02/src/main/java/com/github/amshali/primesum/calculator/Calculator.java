@@ -30,9 +30,6 @@ public class Calculator {
    * Counts the number of in flight queries for debugging purposes.
    */
   private AtomicInteger inFlight = new AtomicInteger(0);
-  public static final int SPLIT_SIZE = 2_500_000;
-  private ExecutorService executorService =
-       Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
   public static void main(String[] args) {
     SpringApplication.run(Calculator.class, args);
@@ -45,22 +42,12 @@ public class Calculator {
 
   @PostMapping("/sumPrime")
   public AsyncResult<SumPrimeResponse> sumPrime(@RequestBody SumPrimeRequest request) {
-    inFlight.incrementAndGet();
     var stopWatch = new StopWatch();
     stopWatch.start();
-    var futures =
-    executorService.invokeAll(PrimeSum.generateSplits(request, SPLIT_SIZE)
-        .stream().map((r) -> (Callable<Long>) () -> PrimeSum.sumPrime(r.a, r.b)).toList());
-    var sum = new AtomicLong(0);
-    futures.forEach((v) -> {
-      try {
-        sum.addAndGet(v.get());
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
-      }
-    });
-    stopWatch.stop();
+    inFlight.incrementAndGet();
+    Long sum = PrimeSum.sumPrime(request.a, request.b);
     inFlight.decrementAndGet();
-    return new AsyncResult<>(new SumPrimeResponse(sum.get(), stopWatch.getTotalTimeMillis()));
+    stopWatch.stop();
+    return new AsyncResult<>(new SumPrimeResponse(sum, stopWatch.getTotalTimeMillis()));
   }
 }
