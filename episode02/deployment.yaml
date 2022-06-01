@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: primesum-calculator
+  labels:
+    app: primesum-calculator
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: primesum-calculator
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: primesum-calculator
+  labels:
+    app: primesum-calculator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: primesum-calculator
+  template:
+    metadata:
+      labels:
+        app: primesum-calculator
+    spec:
+      containers:
+        - name: primesum-calculator
+          image: primesum-calculator:latest
+          # We need to have this policy here to 
+          # make it work locally on minikube.
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          resources:
+            # Dividing the available 12 CPUs between
+            # two replicas:
+            requests:
+              cpu: "5"
+              memory: "1G"
+            limits:
+              cpu: "5"
+              memory: "1G"
