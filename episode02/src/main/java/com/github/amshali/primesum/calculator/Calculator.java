@@ -32,6 +32,7 @@ public class Calculator {
   private AtomicInteger inFlight = new AtomicInteger(0);
 
   public static void main(String[] args) {
+    System.out.println("Available cores: " + Runtime.getRuntime().availableProcessors());
     SpringApplication.run(Calculator.class, args);
   }
 
