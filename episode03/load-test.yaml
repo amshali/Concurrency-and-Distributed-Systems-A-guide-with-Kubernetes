@@ -1,0 +1,20 @@
+config:
+  phases:
+    - duration: 100
+      arrivalRate: 20
+  payload:
+    path: "small-queries.csv"
+    fields:
+      - "a"
+      - "b"
+  http:
+    timeout: 120
+
+scenarios:
+  - name: "sumPrime load test"
+    flow:
+      - post:
+          url: "/sumPrime"
+          json:
+            a: "{{ a }}"
+            b: "{{ b }}"
