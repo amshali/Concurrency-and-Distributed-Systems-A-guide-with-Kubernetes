@@ -4,6 +4,7 @@ metadata:
   name: primesum-calculator
 spec:
   maxReplicas: 2
+  minReplicas: 1
   metrics:
   - resource:
       name: cpu

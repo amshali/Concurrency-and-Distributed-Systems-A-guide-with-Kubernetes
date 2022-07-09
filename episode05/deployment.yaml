@@ -37,7 +37,7 @@ spec:
             - containerPort: 80
           env:
             - name: THROTTLING_THRESHOLD
-              value: "20"
+              value: "2000"
           resources:
             # Dividing the available 12 CPUs between
             # two replicas:
