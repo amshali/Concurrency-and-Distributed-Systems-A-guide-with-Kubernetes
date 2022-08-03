@@ -21,4 +21,7 @@ export SERVER=????
 # Check to see if server is up:
 curl -X GET "http://${SERVER}/actuator/healthz"
 
+# Run a load test:
+artillery run -t "http://${SERVER}" load-test.yaml
+
 ```

@@ -1,7 +1,7 @@
 config:
   phases:
     - duration: 100
-      arrivalRate: 20
+      arrivalRate: 15
   payload:
     path: "small-queries.csv"
     fields:
