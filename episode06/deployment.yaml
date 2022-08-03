@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: primesum-server
+  labels:
+    app: primesum-server
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: primesum-server
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: primesum-server
+spec:
+  selector:
+    matchLabels:
+      app: primesum-server # has to match .spec.template.metadata.labels
+  serviceName: "primesum-server"
+  minReadySeconds: 20
+  template:
+    metadata:
+      labels:
+        app: primesum-server # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 20
+      containers:
+        - name: primesum-server
+          image: primesum-server:latest
+          imagePullPolicy: Never
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 80
+            failureThreshold: 10
+            periodSeconds: 5
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: primesum-worker
+  labels:
+    app: primesum-worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: primesum-worker
+  template:
+    metadata:
+      labels:
+        app: primesum-worker
+    spec:
+      containers:
+        - name: primesum-worker
+          image: primesum-worker:latest
+          imagePullPolicy: Never
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 80
+            failureThreshold: 10
+            periodSeconds: 10
+          env:
+            - name: COORDINATOR
+              value: "http://primesum-server/"
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "1"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
