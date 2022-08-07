@@ -63,7 +63,8 @@ public class CacheImpl<K extends Comparable<K>, V> implements Cache<K, V> {
     try {
       final var numItemsToEvict = Math.ceil(maxSize * shrinkPercentage);
       while (maxSize - data.size() < numItemsToEvict) {
-        var k = evictionManager.evict();
+        var k = evictionManager.selectKeyToEvict();
+        evictionManager.evict(k);
         data.remove(k);
       }
     } finally {

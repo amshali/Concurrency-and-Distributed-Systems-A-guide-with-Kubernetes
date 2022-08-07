@@ -9,11 +9,16 @@ public interface EvictionManager<K extends Comparable<K>> {
   void access(K key);
 
   /**
-   * Selects and evicts a key.
+   * Selects a key to evict.
    *
-   * @return the evicted key.
+   * @return the candidate key to evict.
    */
-  K evict();
+  K selectKeyToEvict();
+
+  /**
+   * Evicts a key.
+   */
+  void evict(K key);
 
   /**
    * Deletes a key.
