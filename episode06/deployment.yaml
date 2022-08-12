@@ -20,13 +20,13 @@ spec:
     matchLabels:
       app: primesum-server # has to match .spec.template.metadata.labels
   serviceName: "primesum-server"
-  minReadySeconds: 20
+  minReadySeconds: 10
   template:
     metadata:
       labels:
         app: primesum-server # has to match .spec.selector.matchLabels
     spec:
-      terminationGracePeriodSeconds: 20
+      terminationGracePeriodSeconds: 10
       containers:
         - name: primesum-server
           image: primesum-server:latest
