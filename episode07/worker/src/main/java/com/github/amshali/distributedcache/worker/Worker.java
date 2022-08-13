@@ -38,8 +38,7 @@ public class Worker implements ApplicationRunner {
   }
 
   @Override
-  public void run(ApplicationArguments args) throws IOException, InterruptedException,
-      KeeperException {
+  public void run(ApplicationArguments args) throws IOException {
     String fZooKeeperHost = args.getOptionValues("zookeeper").get(0);
     String fZooKeeperWorkersPath = args.getOptionValues("zk_workers_path").get(0);
     zooKeeper = new ZooKeeperConnection(fZooKeeperHost, () -> {
