@@ -3,26 +3,36 @@ package com.github.amshali.distributedcache.worker;
 import org.apache.zookeeper.*;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 
 public class ZooKeeperConnection {
   public static final int ZK_SESSION_TIMEOUT = 5000;
   public static final String SLASH = "/";
-  private final ZooKeeper zooKeeper;
-  final CountDownLatch connectedSignal = new CountDownLatch(1);
-
-  public ZooKeeperConnection(String host) throws IOException,InterruptedException {
-
-    zooKeeper = new ZooKeeper(host,ZK_SESSION_TIMEOUT, we -> {
-      if (we.getState() == Watcher.Event.KeeperState.SyncConnected) {
-        connectedSignal.countDown();
+  private ZooKeeper zooKeeper = null;
+  private Runnable onConnect = null;
+  private String zooKeeperHost = null;
+  final private Watcher watcher = we -> {
+    if (we.getState() == Watcher.Event.KeeperState.SyncConnected) {
+      System.out.println(">>>>> Connected");
+      onConnect.run();
+    }
+    if (we.getState() == Watcher.Event.KeeperState.Expired) {
+      System.out.println(">>>>> Expired");
+      try {
+        zooKeeper = new ZooKeeper(zooKeeperHost, ZK_SESSION_TIMEOUT, this.watcher);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
-    });
+    }
+  };
 
-    connectedSignal.await();
+  public ZooKeeperConnection(String host, Runnable onConnect) throws IOException {
+    this.zooKeeperHost = host;
+    this.onConnect = onConnect;
+    zooKeeper = new ZooKeeper(this.zooKeeperHost, ZK_SESSION_TIMEOUT, watcher);
   }
 
-  public void createIgnoreExists(String path, CreateMode createMode) throws KeeperException, InterruptedException {
+  public void createIgnoreExists(String path, CreateMode createMode) throws KeeperException,
+      InterruptedException {
     try {
       zooKeeper.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
     } catch (KeeperException e) {
