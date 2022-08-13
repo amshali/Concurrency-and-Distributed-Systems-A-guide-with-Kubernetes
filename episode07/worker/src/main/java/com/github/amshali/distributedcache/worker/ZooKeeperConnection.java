@@ -12,11 +12,9 @@ public class ZooKeeperConnection {
   private String zooKeeperHost = null;
   final private Watcher watcher = we -> {
     if (we.getState() == Watcher.Event.KeeperState.SyncConnected) {
-      System.out.println(">>>>> Connected");
       onConnect.run();
     }
     if (we.getState() == Watcher.Event.KeeperState.Expired) {
-      System.out.println(">>>>> Expired");
       try {
         zooKeeper = new ZooKeeper(zooKeeperHost, ZK_SESSION_TIMEOUT, this.watcher);
       } catch (IOException e) {
