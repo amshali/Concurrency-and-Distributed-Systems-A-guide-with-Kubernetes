@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,6 +25,7 @@ import java.util.concurrent.Future;
 @EnableScheduling
 @Service
 @EnableAutoConfiguration
+@Controller
 public class Worker implements ApplicationRunner {
 
   private ZooKeeperConnection zooKeeper;
@@ -55,13 +57,15 @@ public class Worker implements ApplicationRunner {
   private CacheImpl<String, String> cacheShard = new CacheImpl<>(new LfuEvictionManager<String>(),
       800_000, 20);
 
-  @PutMapping("/{key}")
-  public Future<String> set(@PathVariable String key, @RequestBody String data) {
-    cacheShard.set(key, data);
+  @PutMapping("/set/{key}")
+  @ResponseBody
+  public Future<String> set(@PathVariable String key, @RequestBody String value) {
+    cacheShard.set(key, value);
     return new AsyncResult<>(key);
   }
 
-  @GetMapping("/{key}")
+  @GetMapping("/get/{key}")
+  @ResponseBody
   public AsyncResult<String> get(@PathVariable String key) {
     var v = cacheShard.get(key);
     if (v == null) {
