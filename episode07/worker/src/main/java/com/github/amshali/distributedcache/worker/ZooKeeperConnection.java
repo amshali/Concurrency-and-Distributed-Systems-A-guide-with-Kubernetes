@@ -3,6 +3,7 @@ package com.github.amshali.distributedcache.worker;
 import org.apache.zookeeper.*;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ZooKeeperConnection {
   public static final int ZK_SESSION_TIMEOUT = 5000;
@@ -51,5 +52,9 @@ public class ZooKeeperConnection {
       sb.append(SLASH).append(p);
       createIgnoreExists(sb.toString(), createMode);
     }
+  }
+
+  public List<String> list(String path) throws InterruptedException, KeeperException {
+    return zooKeeper.getChildren(path, false);
   }
 }
