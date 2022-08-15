@@ -2,6 +2,7 @@ package com.github.amshali.distributedcache.worker;
 
 import com.github.amshali.basiccache.CacheImpl;
 import com.github.amshali.basiccache.LfuEvictionManager;
+import com.github.amshali.zk.ZooKeeperConnection;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.boot.ApplicationArguments;

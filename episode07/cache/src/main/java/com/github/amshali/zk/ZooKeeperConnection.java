@@ -1,4 +1,4 @@
-package com.github.amshali.distributedcache.worker;
+package com.github.amshali.zk;
 
 import org.apache.zookeeper.*;
 
