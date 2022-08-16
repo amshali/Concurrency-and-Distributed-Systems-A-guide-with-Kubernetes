@@ -5,15 +5,19 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.TreeSet;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
@@ -24,19 +28,23 @@ import java.util.stream.IntStream;
 @EnableAutoConfiguration
 public class Server implements ApplicationRunner {
 
+  public static Double TWO_PI = 2 * Math.PI;
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+  private final TreeSet<String> workersSortedSet = new TreeSet<>(
+      Comparator.comparing(Server::ringHash));
   private ZooKeeperConnection zooKeeper;
   private String fZooKeeperWorkersPath;
   private Integer fWorkerRingReplicas = 50;
-  public static Double TWO_PI = 2 * Math.PI;
+  private final WorkerStub workerStub = new WorkerStub();
+
   public static void main(String[] args) {
-//    SpringApplication.run(Server.class, args);
-    var s = new Server();
-    s.TEST();
+    SpringApplication.run(Server.class, args);
   }
 
   /**
    * Returns a number between 0(inclusive) and 360(exclusive) which represent the location
    * of the key on the hash ring.
+   *
    * @param key key to hash.
    * @return a number between 0(inclusive) and 360(exclusive)
    */
@@ -46,31 +54,6 @@ public class Server implements ApplicationRunner {
       m += TWO_PI;
     }
     return m;
-  }
-
-  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-  private final TreeSet<String> workersSortedSet = new TreeSet<>(
-      Comparator.comparing(Server::ringHash));
-
-  public void TEST() {
-    System.out.println("key1".hashCode());
-    System.out.println("key2".hashCode());
-    for (int s = 1; s <= 3; s++) {
-      for (int j = 0; j < fWorkerRingReplicas; j++) {
-        workersSortedSet.add("server"+s + "-"+j);
-      }
-    }
-    for (var w : workersSortedSet) {
-      System.out.println(w + ": " + ringHash(w));
-    }
-    var countMap = new HashMap<String, Integer>();
-    for (int i = 0; i < 100000; i++) {
-      var k = "key" + Math.random();
-      var l = findKeyLocation(k);
-      countMap.putIfAbsent(l, 0);
-      countMap.put(l, countMap.get(l) + 1);
-    }
-    System.out.println(countMap);
   }
 
   private String findKeyLocation(String key) {
@@ -105,11 +88,26 @@ public class Server implements ApplicationRunner {
     }
   }
 
+  @PutMapping("/set/{key}")
+  @ResponseBody
+  public Future<String> set(@PathVariable String key, @RequestBody String value) {
+    var workerAddress = findKeyLocation(key);
+    return new AsyncResult<>(workerStub.set(workerAddress, key, value));
+  }
+
+  @GetMapping("/get/{key}")
+  @ResponseBody
+  public AsyncResult<String> get(@PathVariable String key) {
+    var workerAddress = findKeyLocation(key);
+    return new AsyncResult<>(workerStub.get(workerAddress, key));
+  }
+
   @Override
   public void run(ApplicationArguments args) throws IOException {
     String fZooKeeperHost = args.getOptionValues("zookeeper").get(0);
     fZooKeeperWorkersPath = args.getOptionValues("zk_workers_path").get(0);
     fWorkerRingReplicas = Integer.parseInt(args.getOptionValues("worker_ring_replicas").get(0));
-    zooKeeper = new ZooKeeperConnection(fZooKeeperHost, () -> {});
+    zooKeeper = new ZooKeeperConnection(fZooKeeperHost, () -> {
+    });
   }
 }
