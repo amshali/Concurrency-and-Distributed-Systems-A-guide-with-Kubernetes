@@ -10,7 +10,6 @@
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
 
-
   <groupId>com.github.amshali.distributedcache</groupId>
   <artifactId>server</artifactId>
   <version>1.0</version>
@@ -61,4 +60,12 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -13,8 +13,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Comparator;
 import java.util.TreeSet;
 import java.util.concurrent.Future;
@@ -90,16 +92,24 @@ public class Server implements ApplicationRunner {
 
   @PutMapping("/set/{key}")
   @ResponseBody
-  public Future<String> set(@PathVariable String key, @RequestBody String value) {
+  public Future<String> set(@PathVariable String key, @RequestBody String value) throws URISyntaxException {
     var workerAddress = findKeyLocation(key);
-    return new AsyncResult<>(workerStub.set(workerAddress, key, value));
+    var response = workerStub.set(workerAddress, key, value);
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      throw new ResponseStatusException(response.getStatusCode());
+    }
+    return new AsyncResult<>(response.getBody());
   }
 
   @GetMapping("/get/{key}")
   @ResponseBody
-  public AsyncResult<String> get(@PathVariable String key) {
+  public AsyncResult<String> get(@PathVariable String key) throws URISyntaxException {
     var workerAddress = findKeyLocation(key);
-    return new AsyncResult<>(workerStub.get(workerAddress, key));
+    var response = workerStub.get(workerAddress, key);
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      throw new ResponseStatusException(response.getStatusCode());
+    }
+    return new AsyncResult<>(response.getBody());
   }
 
   @Override
