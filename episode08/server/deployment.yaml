@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: primesum-async-server
+  labels:
+    app: primesum-async-server
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: primesum-async-server
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: primesum-async-server
+spec:
+  selector:
+    matchLabels:
+      app: primesum-async-server # has to match .spec.template.metadata.labels
+  serviceName: "primesum-async-server"
+  replicas: 5
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: primesum-async-server # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: primesum-async-server
+          image: primesum-async-server:latest
+          imagePullPolicy: Never
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 80
+            failureThreshold: 10
+            periodSeconds: 5
+          env:
+            - name: RESPONSE_STORE_CLASS
+              value: "com.github.amshali.asynchronous.sumofprime.CouchDbResponseRepository"
+            - name: COUCH_DB_ADDRESS
+              value: "sop-svc-couchdb.default.svc.cluster.local"
+            - name: COUCH_DB_RESPONSE_DB
+              value: "response"
+            - name: COUCH_DB_PORT
+              value: "5984"
+            - name: COUCH_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sop-couchdb
+                  key: adminUsername
+            - name: COUCH_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sop-couchdb
+                  key: adminPassword
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
