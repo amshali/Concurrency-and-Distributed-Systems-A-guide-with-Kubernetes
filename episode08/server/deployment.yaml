@@ -20,7 +20,7 @@ spec:
     matchLabels:
       app: primesum-async-server # has to match .spec.template.metadata.labels
   serviceName: "primesum-async-server"
-  replicas: 5
+  replicas: 10
   minReadySeconds: 10
   template:
     metadata:
