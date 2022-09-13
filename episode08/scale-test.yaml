@@ -1,0 +1,32 @@
+config:
+  phases:
+    - duration: 100
+      arrivalRate: 10
+  processor: "./scale-test-helper.js"
+  payload:
+    path: "small-queries.csv"
+    fields:
+      - "a"
+      - "b"
+  http:
+    timeout: 120
+
+scenarios:
+  - name: "Async sumPrime load test"
+    flow:
+      - post:
+          url: "/sumPrime"
+          json:
+            a: "{{ a }}"
+            b: "{{ b }}"
+          capture:
+            - json: $._id
+              as: "requestId"
+      - loop:
+          - get:
+              url: "/sumPrime/{{ requestId }}"
+              capture:
+                - json: $.status
+                  as: "status"
+          - think: 2
+        whileTrue: "notFinished"
