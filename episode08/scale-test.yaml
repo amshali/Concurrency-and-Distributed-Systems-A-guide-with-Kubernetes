@@ -28,5 +28,5 @@ scenarios:
               capture:
                 - json: $.status
                   as: "status"
-          - think: 2
+          - think: 5
         whileTrue: "notFinished"

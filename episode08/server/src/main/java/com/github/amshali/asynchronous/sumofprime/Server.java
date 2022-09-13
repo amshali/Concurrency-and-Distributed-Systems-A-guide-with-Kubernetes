@@ -89,6 +89,6 @@ public class Server implements ApplicationRunner {
     var fResponseStoreClass = args.getOptionValues("response_store_class").get(0);
     var clazz = Class.forName(fResponseStoreClass);
     responseStore = (ResponseStore) clazz.getConstructor().newInstance();
-    executorService = Executors.newWorkStealingPool();
+    executorService = Executors.newFixedThreadPool(5);
   }
 }
