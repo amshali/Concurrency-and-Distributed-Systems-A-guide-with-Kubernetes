@@ -23,10 +23,10 @@ scenarios:
             - json: $._id
               as: "requestId"
       - loop:
+          - think: 5
           - get:
               url: "/sumPrime/{{ requestId }}"
               capture:
                 - json: $.status
                   as: "status"
-          - think: 5
         whileTrue: "notFinished"
