@@ -1,7 +1,7 @@
 config:
   phases:
     - duration: 100
-      arrivalRate: 10
+      arrivalRate: 15
   processor: "./scale-test-helper.js"
   payload:
     path: "small-queries.csv"

@@ -34,7 +34,7 @@ public class Server implements ApplicationRunner {
   }
 
   @PostMapping("/sumPrime")
-  public AsyncResult<SumPrimeResponse> sumPrime(
+  public SumPrimeResponse sumPrime(
       @RequestBody SumPrimeRequest request) {
     if (request.a < 0 || request.b < 0 || request.a >= request.b
         || request.a > MAX_INPUT || request.b > MAX_INPUT) {
@@ -49,7 +49,7 @@ public class Server implements ApplicationRunner {
     responseStore.updateResponse(response);
     // Submit a task to the executor's queue:
     executorService.submit(createTask(requestId, request, now));
-    return new AsyncResult<>(response);
+    return response;
   }
 
   private Callable<Void> createTask(String requestId,
@@ -76,12 +76,12 @@ public class Server implements ApplicationRunner {
   }
 
   @GetMapping("/sumPrime/{requestId}")
-  public AsyncResult<SumPrimeResponse> get(@PathVariable String requestId) {
+  public SumPrimeResponse get(@PathVariable String requestId) {
     var r = responseStore.getResponse(requestId);
     if (r == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
-    return new AsyncResult<>(r);
+    return r;
   }
 
   @Override
