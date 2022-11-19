@@ -23,8 +23,11 @@ public class PrimeSum {
   public static Long sumPrime(int a, int b) throws InterruptedException {
     var sum = 0L;
     for (int i = a; i < b; i++) {
-      if (Thread.currentThread().isInterrupted()) {
-        throw new InterruptedException();
+      if (i % 10000 == 0) {
+        if (Thread.currentThread().isInterrupted()) {
+          throw new InterruptedException();
+        }
+        Thread.yield();
       }
       sum += (isPrime(i) ? i : 0);
     }

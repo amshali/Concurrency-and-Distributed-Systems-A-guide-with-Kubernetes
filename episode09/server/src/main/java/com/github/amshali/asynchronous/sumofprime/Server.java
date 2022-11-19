@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Server implements ApplicationRunner {
   public static final int TTL_MS = 600_000;
   public static final int MAX_INPUT = 100_000_000;
-  private final AtomicInteger inProgress = new AtomicInteger(0);
+  private Semaphore concurrencySemaphore;
   private final AmazonSQS sqs = AmazonSQSClientBuilder.defaultClient();
   private ExecutorService executorService;
   /**
@@ -109,31 +109,31 @@ public class Server implements ApplicationRunner {
     };
   }
 
-  @Scheduled(fixedDelay = 1000, initialDelay = 5000)
-  private void retrieveRequestFromSqs() {
-    if (inProgress.get() < maxConcurrency) {
-      var receiveMessageResult =
-          sqs.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl)
-              .withMaxNumberOfMessages(1).withVisibilityTimeout(requestTimeoutSec)
-              .withWaitTimeSeconds(10));
-      if (!receiveMessageResult.getMessages().isEmpty()) {
-        inProgress.incrementAndGet();
-        var msg = receiveMessageResult.getMessages().get(0);
-        System.out.println("Got message: " + msg.getBody());
-        Gson gson = new Gson();
-        // create task...
-        var future = executorService.submit(runRequest(gson.fromJson(msg.getBody(),
-                SumPrimeRequest.class), msg.getReceiptHandle()));
-        // Monitor the task and cancel if it exceeds the response timeout.
-        executorService.submit(() -> {
-          try {
-            future.get(requestTimeoutSec - 1, TimeUnit.SECONDS);
-          } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            future.cancel(true);
-          }
-          inProgress.decrementAndGet();
-        });
-      }
+  @Scheduled(fixedDelay = 10, initialDelay = 2000)
+  private void retrieveRequestFromSqs() throws InterruptedException {
+    concurrencySemaphore.acquire();
+    var receiveMessageResult =
+        sqs.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl)
+            .withMaxNumberOfMessages(1).withVisibilityTimeout(requestTimeoutSec)
+            .withWaitTimeSeconds(20));
+    if (receiveMessageResult.getMessages().isEmpty()) {
+      concurrencySemaphore.release();
+    } else {
+      var msg = receiveMessageResult.getMessages().get(0);
+      System.out.println("Got message: " + msg.getBody());
+      Gson gson = new Gson();
+      // create task...
+      var future = executorService.submit(runRequest(gson.fromJson(msg.getBody(),
+              SumPrimeRequest.class), msg.getReceiptHandle()));
+      // Monitor the task and cancel if it exceeds the response timeout.
+      executorService.submit(() -> {
+        try {
+          future.get(requestTimeoutSec - 1, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+          future.cancel(true);
+        }
+        concurrencySemaphore.release();
+      });
     }
   }
 
@@ -145,6 +145,7 @@ public class Server implements ApplicationRunner {
     requestTimeoutSec = Integer.parseInt(args.getOptionValues("request_timeout_sec").get(0));
     var clazz = Class.forName(fResponseStoreClass);
     responseStore = (ResponseStore) clazz.getConstructor().newInstance();
+    concurrencySemaphore = new Semaphore(maxConcurrency, true);
     executorService = Executors.newFixedThreadPool(maxConcurrency * 2);
   }
 }

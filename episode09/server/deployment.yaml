@@ -41,7 +41,7 @@ spec:
             periodSeconds: 5
           env:
             - name: MAX_CONCURRENCY
-              value: "4"
+              value: "5"
             - name: QUEUE_URL
               value: "https://sqs.us-west-2.amazonaws.com/285309042718/sum-of-primes"
             - name: RESPONSE_STORE_CLASS
