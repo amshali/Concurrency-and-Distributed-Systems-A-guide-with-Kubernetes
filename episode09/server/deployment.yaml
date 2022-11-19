@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: primesum-async-server-sqs
+  labels:
+    app: primesum-async-server-sqs
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: primesum-async-server-sqs
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: primesum-async-server-sqs
+  labels:
+    app: primesum-async-server-sqs
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: primesum-async-server-sqs
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: primesum-async-server-sqs # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: primesum-async-server-sqs
+          image: primesum-async-server-sqs:latest
+          imagePullPolicy: Never
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 80
+            failureThreshold: 10
+            periodSeconds: 5
+          env:
+            - name: MAX_CONCURRENCY
+              value: "4"
+            - name: QUEUE_URL
+              value: "https://sqs.us-west-2.amazonaws.com/285309042718/sum-of-primes"
+            - name: RESPONSE_STORE_CLASS
+              value: "com.github.amshali.asynchronous.sumofprime.CouchDbResponseRepository"
+            - name: COUCH_DB_ADDRESS
+              value: "sop-svc-couchdb.default.svc.cluster.local"
+            - name: COUCH_DB_RESPONSE_DB
+              value: "response"
+            - name: COUCH_DB_PORT
+              value: "5984"
+            - name: COUCH_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sop-couchdb
+                  key: adminUsername
+            - name: COUCH_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sop-couchdb
+                  key: adminPassword
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            # AWS related configs
+            - name: AWS_REGION
+              value: "us-west-2"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sop-aws
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sop-aws
+                  key: AWS_SECRET_ACCESS_KEY
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "2"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "1Gi"
