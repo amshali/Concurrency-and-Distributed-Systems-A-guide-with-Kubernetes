@@ -42,8 +42,6 @@ spec:
           env:
             - name: MAX_CONCURRENCY
               value: "5"
-            - name: QUEUE_URL
-              value: "https://sqs.us-west-2.amazonaws.com/285309042718/sum-of-primes"
             - name: RESPONSE_STORE_CLASS
               value: "com.github.amshali.asynchronous.sumofprime.CouchDbResponseRepository"
             - name: COUCH_DB_ADDRESS
@@ -73,6 +71,11 @@ spec:
             # AWS related configs
             - name: AWS_REGION
               value: "us-west-2"
+            - name: QUEUE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sop-aws
+                  key: QUEUE_URL
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
